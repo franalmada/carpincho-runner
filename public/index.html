@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Carpincho Runner 🧉</title>
+    <link rel="icon" type="image/png" href="assets/carpincho.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <div id="login-screen" class="screen">
+            <h1>CARPINCHO<br>RUNNER</h1>
+            <p class="subtitle">Torneo Semanal</p>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label>TU Nombre</label>
+                    <input type="text" id="nickname" placeholder="Ej: GokuDev" required maxlength="12">
+                </div>
+                
+                <div class="input-group">
+                    <label>PIN (Últimos 4 del Cel)</label>
+                    <input type="tel" id="pin" placeholder="Ej: 0981" required maxlength="4" pattern="[0-9]*">
+                </div>
+
+                <button type="submit" class="btn-start">JUGAR AHORA</button>
+            </form>
+            
+            <div id="loading" class="hidden">Cargando...</div>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <div class="hud">
+                <span id="score">00000</span>
+            </div>
+            <canvas id="game-canvas"></canvas>
+            <div id="mobile-controls">TAP PARA SALTAR</div>
+        </div>
+
+        <div id="game-over-screen" class="screen hidden">
+    <h2>¡JUEGO TERMINADO!</h2>
+    <div class="score-board">
+        <p>TU PUNTAJE</p>
+        <span id="final-score" class="big-score">0</span>
+    </div>
+
+    <div class="ranking-container">
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>PTS</th>
+                </tr>
+            </thead>
+            <tbody id="ranking-body">
+                </tbody>
+        </table>
+    </div>
+    
+    <button id="btn-restart" class="btn-primary">INTENTAR DE NUEVO 🔄</button>
+</div>
+
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
