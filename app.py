@@ -1,12 +1,12 @@
+import os
+import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import psycopg2
 from datetime import datetime
 import uuid
 
 app = Flask(__name__)
 CORS(app) 
-
 
 DB_CONFIG = {
     'dbname': 'carpincho_runner_db',
@@ -16,12 +16,22 @@ DB_CONFIG = {
     'port': '5432'
 }
 
+def get_db_connection():
+    url_nube = os.environ.get('DATABASE_URL')
+    
+    if url_nube:
+       
+        return psycopg2.connect(url_nube, sslmode='require')
+    else:
+      
+        return psycopg2.connect(**DB_CONFIG)
+
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
-    conn = get_db_connection()
-    cur = conn.cursor()
     try:
+        conn = get_db_connection()
+        cur = conn.cursor()
         cur.execute("SELECT posicion, nickname, mejor_puntaje, fecha_record FROM vista_top_10;")
         rows = cur.fetchall()
         
@@ -36,13 +46,11 @@ def get_leaderboard():
             
         return jsonify(ranking)
     except Exception as e:
+        print(f"Error en leaderboard: {e}") 
         return jsonify({'error': str(e)}), 500
     finally:
-        cur.close()
-        conn.close()
-
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
+        if 'cur' in locals(): cur.close()
+        if 'conn' in locals(): conn.close()
 
 
 @app.route('/api/start-game', methods=['POST'])
@@ -54,10 +62,10 @@ def start_game():
     if not nickname or not pin:
         return jsonify({'error': 'Faltan datos'}), 400
 
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
     try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
         cur.execute("""
             INSERT INTO sesiones_juego (nickname, telefono_cod, inicio_juego)
             VALUES (%s, %s, NOW())
@@ -70,11 +78,13 @@ def start_game():
         return jsonify({'session_id': session_id, 'status': 'ok'})
         
     except Exception as e:
-        conn.rollback()
+        if 'conn' in locals(): conn.rollback()
+        print(f"Error en start-game: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
-        cur.close()
-        conn.close()
+        if 'cur' in locals(): cur.close()
+        if 'conn' in locals(): conn.close()
+
 
 @app.route('/api/submit-score', methods=['POST'])
 def submit_score():
@@ -82,10 +92,10 @@ def submit_score():
     session_id = data.get('session_id')
     score_reclamado = data.get('score')
     
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
     try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
         cur.execute("SELECT inicio_juego FROM sesiones_juego WHERE session_id = %s", (session_id,))
         resultado = cur.fetchone()
         
@@ -94,10 +104,11 @@ def submit_score():
             
         start_time = resultado[0]
         
-        
+       
         ahora = datetime.now(start_time.tzinfo) 
         tiempo_jugado = (ahora - start_time).total_seconds()
         
+       
         max_posible = (tiempo_jugado + 2) * 1.5 
         
         es_valido = True
@@ -105,8 +116,8 @@ def submit_score():
         
         if score_reclamado > max_posible: 
             es_valido = False
-            motivo = f"Imposible: Hizo {score_reclamado} en {tiempo_jugado:.2f}s"
-            print(f"⚠️ ALERTA DE TRAMPOSO: {motivo}")
+            motivo = f"Sospechoso: Hizo {score_reclamado} pts en {tiempo_jugado:.2f}s"
+            print(f"⚠️ TRAMPA DETECTADA: {motivo}")
 
         cur.execute("""
             UPDATE sesiones_juego 
@@ -122,13 +133,12 @@ def submit_score():
         return jsonify({'valid': es_valido, 'message': 'Puntaje registrado'})
 
     except Exception as e:
+        if 'conn' in locals(): conn.rollback()
+        print(f"Error en submit-score: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
-        cur.close()
-        conn.close()
+        if 'cur' in locals(): cur.close()
+        if 'conn' in locals(): conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
-
-    
